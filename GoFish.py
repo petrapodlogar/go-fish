@@ -46,7 +46,19 @@ class Računalnik:
 def razdeli(karte):
     racunalnikove = []
     igralceve = []
-#    for _ in range(7):
-#        if bo_igralec_prvi() == True:
-# najprej deli igralcu
+    if bo_igralec_prvi():
+        for _ in range(7):
+            prva_karta = karte.pop()
+            druga_karta = karte.pop()
+            igralceve.append(prva_karta)
+            racunalnikove.append(druga_karta)
+    else:
+        for _ in range(7):
+            prva_karta = karte.pop()
+            druga_karta = karte.pop()
+            racunalnikove.append(prva_karta)
+            igralceve.append(druga_karta)
+    return igralceve, racunalnikove
+
+            
         
