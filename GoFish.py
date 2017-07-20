@@ -25,10 +25,6 @@ def nov_kup():
     random.shuffle(vse_karte)
     return vse_karte
 
-def bo_igralec_prvi():
-    igralceva_izbira = input("Grb ali cifra? ")
-    met = random.choice(['cifra', 'grb'])
-    return igralceva_izbira == met
 
 
 class Igra:
@@ -52,13 +48,45 @@ class Igra:
         while not self.je_konec():
             print("Na potezi: {}".format(self.na_potezi))
             vsaj_kaksna_karta_je_bila_prenesena = True
+
+            # če bi slučajno igralec izgubil vse karte, medtem ko ni bil na vrsti
+            if self.igralci[self.na_potezi].v_roki == []:
+                if self.karte != []:
+                    if len(self.karte) >= 7:
+                        for _ in range(7):
+                            self.igralci[self.na_potezi].daj_karto(self.karte.pop())
+                    else:
+                        for _ in range(len(self.karte)):
+                            self.igralci[self.na_potezi].daj_karto(self.karte.pop())
+            
             while vsaj_kaksna_karta_je_bila_prenesena:
                 print("Tvoje karte: {}".format(self.igralci[self.na_potezi]))
-                n = self.povprasaj_po_stevilki()
-                vsaj_kaksna_karta_je_bila_prenesena = self.izvedi_prenos_kart(n)
-                self.igralci[self.na_potezi].preveri_in_odstrani()
                 
+                klicana_karta = self.povprasaj_po_stevilki()
+                vsaj_kaksna_karta_je_bila_prenesena = self.izvedi_prenos_kart(klicana_karta)
+                self.igralci[self.na_potezi].preveri_in_odstrani()
+
+                # če nima praznih rok in nasprotnik nima iskane karte, kupi 1, na vrsto pride drugi
+                if self.igralci[self.na_potezi].v_roki != []:
+                    if not vsaj_kaksna_karta_je_bila_prenesena:
+                        if self.karte != []:
+                            self.igralci[self.na_potezi].daj_karto(self.karte.pop())
+                            self.igralci[self.na_potezi].preveri_in_odstrani()
+
+                # če nima več kart, jih kupi 7 oz. kolikor jih je še ostalo, na vrsto pride drugi
+                if self.igralci[self.na_potezi].v_roki == []:
+                    vsaj_kaksna_karta_je_bila_prenesena = False
+                    if self.karte != []:
+                        if len(self.karte) >= 7:
+                            for _ in range(7):
+                                self.igralci[self.na_potezi].daj_karto(self.karte.pop())
+                        else:
+                            for _ in range(len(self.karte)):
+                                self.igralci[self.na_potezi].daj_karto(self.karte.pop())
+                            
             self.na_potezi = 1 - self.na_potezi
+
+        # print(self.clovek.rezultat, self.racunalnik.rezultat)
                 
 
     def je_konec(self):
@@ -67,18 +95,37 @@ class Igra:
         else:
             return False
 
-    def povprasaj_po_stevilki(self): # TODO lahko vprasa le po tistih ki jih ima v roki
+    def povprasaj_po_stevilki(self):
         # če je na potezi človek, vprašamo, sicer si zmislimo/izberemo
+        # izbirata lahko samo med številkami, ki jih imata v roki
+        
         if self.na_potezi == 0: # človek
-            return int(input("Katero število?"))
+            moznosti = []
+            for karta in self.clovek.v_roki:
+                stevilka = karta.stevilka
+                if stevilka not in moznosti:
+                    moznosti.append(stevilka)
+            n = int(input('Katero število? '))
+            while n not in moznosti:
+                print('Možnosti: {}'.format(moznosti))
+                n = int(input('Katero število? '))
+            return n
+        
         else: # računalnik
-            return random.randint(1, 14)
+            moznosti = []
+            for karta in self.racunalnik.v_roki:
+                stevilka = karta.stevilka
+                if stevilka not in moznosti:
+                    moznosti.append(stevilka)
+            return random.choice(moznosti)
 
     def izvedi_prenos_kart(self, n):
         seznam_kart = self.igralci[1-self.na_potezi].vzemi_karte(n)
         self.igralci[self.na_potezi].daj_karte(seznam_kart)
         print("Prenesle so se karte: {}".format(seznam_kart))
         return seznam_kart != []
+
+
 
 class Igralec:
 
@@ -108,14 +155,14 @@ class Igralec:
         return vzete
 
     def preveri_in_odstrani(self):
-        # odstrani 4 karte ce ima igralec v roki 4 karte z isto stevilko
+        # odstrani 4 karte, če ima igralec v roki 4 karte z isto številko
         ponovitve_stevilk = {}
         for karta in self.v_roki:
             i = karta.stevilka
             ponovitve_stevilk[i] = 1 + ponovitve_stevilk.get(i, 0)
         for stevilka in ponovitve_stevilk:
             if ponovitve_stevilk[stevilka] == 4:
-                print("Odstranili bomo karte s številko: {}".format(stevlika))
+                print("Odstranili bomo karte s številko: {}".format(stevilka))
                 # povečaj rezultat
                 self.rezultat += 1
                 # odstani te karte
